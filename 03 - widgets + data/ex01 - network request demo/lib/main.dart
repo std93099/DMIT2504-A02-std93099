@@ -6,31 +6,7 @@ import 'package:http/http.dart';
 ///TODO: create a stateful widget, override initState to fetch the initial
 /// dog url. NOTE: will need to ensure a callback is used to be certain the
 /// widget has been mounted before calling setState().
-
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hi there!'),
-        ),
-      ),
-    );
-  }
-}
-
-/*
-String dogImageUrl = '';
-
 Future<void> main() async {
-  dogImageUrl = await RandomDogImage.getRandomDogUrl();
   runApp(const MainApp());
 }
 
@@ -49,8 +25,20 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class RandomDogImage extends StatelessWidget {
+// skeleton of ingredients for a stateful widget/component
+// (yes, way more annoying to set up than in React)
+
+class RandomDogImage extends StatefulWidget {
   const RandomDogImage({super.key});
+
+  @override
+  State<RandomDogImage> createState() => _RandomDogImageState();
+}
+
+
+class _RandomDogImageState extends State<RandomDogImage> {
+
+  String dogImageUrl = '';
 
   static Future<String> getRandomDogUrl() async {
     const dogEndpoint = 'https://dog.ceo/api/breeds/image/random';
@@ -58,9 +46,55 @@ class RandomDogImage extends StatelessWidget {
     return await jsonDecode(response.body)['message'];
   }
 
-  @override
-  build(BuildContext context) {
-    return Image.network(dogImageUrl);
+  // refactor dog image fetching into its own function, so i can reuse it
+  Future<void> fetchNewDog() async {
+
+    setState(() { dogImageUrl = ''; });  // reset the dog URL state first
+
+    final url = await getRandomDogUrl(); // get new dog image URL
+
+    if (!mounted) return;                // bail out if component isn't mounted into element tree
+
+    setState(() { dogImageUrl = url; }); // overwrite dog image state
+
   }
+
+  @override
+  void initState() {
+    super.initState();    
+    fetchNewDog();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        
+        // 1. we'll use a SizedBox to control the position of image + button,
+        // so that button doesn't jump around the UI while image is loading
+        SizedBox(
+          height: 300,
+          // ternary gang: conditionally return loading text OR dog image
+          child: dogImageUrl.isEmpty 
+            ? const Center(child: Text("Loading dog..."))
+            : Image.network(dogImageUrl),
+        ),
+
+        // 2. another fixed-height box for some spacing
+        const SizedBox(height: 16),
+
+        // 3. teh button
+        ElevatedButton(
+          onPressed: fetchNewDog, // note: this isn't a call() !
+                                  // it's just naming what function SHOULD fire.
+          child: const Text("fetch new dog (I hated my old one)"),
+        
+        ),
+
+      ]
+    );
+
+  }
+
 }
-*/
